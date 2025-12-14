@@ -211,7 +211,7 @@ int editorReadKey(){
 
 }
 
-/* copy/paste operation */
+
 
 
 
@@ -258,28 +258,28 @@ int getWindowSize(int *rows, int *cols){
     }
 }
 
-/* syntax highlihting */
+
 
 int is_seperator(int c){
     return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;    
 }
 
-/* for checking multiline comments
-and more baby!!!! */
+
 
 void editorUpdateSyntax(erow* row) {
     if (row->hl == NULL || row->rsize == 0) {
         row->hl = malloc(row->rsize);
     } else {
         unsigned char *new_hl = realloc(row->hl, row->rsize);
-        if (!new_hl) return;  // Handle allocation failure gracefully
+        if (!new_hl) return;  
         row->hl = new_hl;
     }
     memset(row->hl, HL_NORMAL, row->rsize);
 
+    if (E.syntax == NULL) return;
+
     char **keywords = E.syntax->keyword;
 
-    if (E.syntax == NULL) return;
 
     char *scs = E.syntax->singleline_comment_start;
     char *mcs = E.syntax->multiline_comment_start;
@@ -1029,7 +1029,7 @@ void editorDrawStatusBar(struct abuf *ab){
     int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
     E.filename ? E.filename : "[No Name]", E.numrows, E.dirty ? "(modified)": "");
     int rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d%d", 
-      E.syntax ? E.filename : " no ft", E.cy+1,E.numrows );
+      E.syntax ? E.syntax->filetype : " no ft", E.cy+1,E.numrows );
     
     if(len > E.screenCols) len = E.screenCols;
     abAppend(ab,status, len);
@@ -1061,7 +1061,7 @@ void editorRefreshScreen(){
 
     struct abuf ab = ABUF_INIT;
 
-    abAppend(&ab, "\x1b[?251", 6);
+    abAppend(&ab, "\x1b[?25l", 6);
     //abAppend(&ab,"\x1b[2J", 4);
     abAppend(&ab, "\x1b[H", 3);
 
