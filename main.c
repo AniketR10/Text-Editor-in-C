@@ -35,7 +35,8 @@ enum editorKey {
     PAGE_DOWN,
     HOME_KEY,
     END_KEY,
-    DELETE_KEY
+    DELETE_KEY,
+    MOUSE_CLICK
 };
 
 enum editorHighlight{
@@ -90,6 +91,8 @@ struct editorConfig {
     char statusmsg[80];
     time_t statusmsg_time;
     struct termios orig_termios;
+    int mouse_row;
+    int mouse_col;
 };
 
 struct editorConfig E;
@@ -139,6 +142,7 @@ void die(const char *s){
 }
 
 void disableRawmode(){
+   write(STDOUT_FILENO, "\x1b[?1000l", 8);
    if(tcsetattr(STDIN_FILENO,TCSAFLUSH, &E.orig_termios) == -1)
    die("tcsetattr");
 }
@@ -146,6 +150,7 @@ void disableRawmode(){
 void enableRawMode(){
   
    if(tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die("tcgetattr");
+   write(STDOUT_FILENO, "\x1b[?1000h", 8);
     atexit(disableRawmode);
 
      struct termios raw = E.orig_termios;
@@ -173,6 +178,15 @@ int editorReadKey(){
          if(read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
 
          if(seq[0] == '['){
+            if (seq[1] == 'M') {            
+                if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
+                if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+                if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+
+                E.mouse_col = seq[1] - 33; 
+                E.mouse_row = seq[2] - 33;
+                return MOUSE_CLICK;
+            }
             if(seq[1] >= '0' && seq[1] <='9'){
                 if(read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
                 if(seq[2] == '~'){
@@ -848,7 +862,37 @@ void editorProcessReadkey(){
 
     int c = editorReadKey();
     switch(c){
+        case MOUSE_CLICK:
+            {
+               
+                int gutter_len = 0;
+                if (E.numrows > 0) {
+                    char buf[32];
+                    gutter_len = snprintf(buf, sizeof(buf), "%d", E.numrows) + 1;
+                }
 
+                
+                int new_y = E.mouse_row + E.rowoff;
+                
+                if (new_y < E.numrows) {
+                    E.cy = new_y;
+                    
+                   
+                    int new_x = E.mouse_col - gutter_len;
+                    
+                  
+                    new_x += E.coloff;
+
+                    if (new_x < 0) new_x = 0; 
+                    E.cx = new_x;
+
+                
+                    if (E.cx > E.row[E.cy].size) {
+                        E.cx = E.row[E.cy].size;
+                    }
+                }
+            }
+            break;
         case '\r':
         editorInsertNewline();
         break;
@@ -954,73 +998,92 @@ void editorScroll() {
 }
 
 
-void editorDrawRows(struct abuf *ab){
+void editorDrawRows(struct abuf *ab) {
     int y;
-    for(y =0;y<E.screenRows;y++){
-        int filerow =  y + E.rowoff;
-        if(filerow >=E.numrows){
-        if( E.numrows == 0 && y == E.screenRows /3){
-            char welcome[80];
-            int welcomeLen = snprintf(welcome, sizeof(welcome),
-            "Kilo editor -- version %s", KILO_VERSION) ;
-            if(welcomeLen > E.screenCols) welcomeLen = E.screenCols;
-            int padding = (E.screenCols - welcomeLen) / 2;
-            if(padding) {
-                abAppend(ab, "~",1);
-                padding--;
-            }
-            while(padding--) abAppend(ab, " ", 1);
-            abAppend(ab, welcome, welcomeLen);
-        } else{
-            abAppend(ab, "~", 1);
+    // Calculate gutter width (e.g., "100 " needs 4 chars)
+    int gutter_len = 0;
+    if (E.numrows > 0) {
+        char buf[32];
+        gutter_len = snprintf(buf, sizeof(buf), "%d", E.numrows) + 1;
+    }
+
+    for (y = 0; y < E.screenRows; y++) {
+        int filerow = y + E.rowoff;
+        
+        // --- START NEW CODE: Draw Line Number ---
+        if (filerow < E.numrows) {
+            char num_buf[32];
+            // Format: "%4d " (Right aligned number with a space)
+            snprintf(num_buf, sizeof(num_buf), "\x1b[33m%*d \x1b[39m", gutter_len - 1, filerow + 1);
+            abAppend(ab, num_buf, strlen(num_buf));
+        } else if (E.numrows > 0) {
+            // Draw empty margin for lines beyond end of file
+            char blank_buf[32];
+            snprintf(blank_buf, sizeof(blank_buf), "%*s", gutter_len, " ");
+            abAppend(ab, blank_buf, strlen(blank_buf));
         }
-     } else {
-        int len = E.row[filerow].rsize - E.coloff;
-        if(len < 0) len = 0;
-        if(len > E.screenCols) len = E.screenCols;
-          char *c = &E.row[filerow].render[E.coloff];
-       unsigned char *hl = &E.row[filerow].hl[E.coloff];
-       int current_color = -1;
-        for(int j =0;j<len;j++){
-            if(iscntrl(c[j])) {
-                char sym = (c[j] <=26) ? '@' + c[j] : '?';
-                abAppend(ab,"\x1b[7m", 4);
-                abAppend(ab,&sym,1);
-                abAppend(ab,"\x1b[m",3);
-                if(current_color != -1){
-                    char buf[16];
-                    int clen = snprintf(buf,sizeof(buf), "\x1b[%dm", current_color);
-                    abAppend(ab,buf,clen);
+        // --- END NEW CODE ---
+
+        if (filerow >= E.numrows) {
+            if (E.numrows == 0 && y == E.screenRows / 3) {
+                char welcome[80];
+                int welcomeLen = snprintf(welcome, sizeof(welcome),
+                    "Kilo editor -- version %s", KILO_VERSION);
+                if (welcomeLen > E.screenCols) welcomeLen = E.screenCols;
+                int padding = (E.screenCols - welcomeLen) / 2;
+                if (padding) {
+                    abAppend(ab, "~", 1);
+                    padding--;
                 }
-            }
-            else if(hl[j] == HL_NORMAL){
-                if(current_color != -1){
-                    current_color = -1;
-                    abAppend(ab, "\x1b[39m", 5);
-                }
-                 
-                abAppend(ab,&c[j],1);
-               
+                while (padding--) abAppend(ab, " ", 1);
+                abAppend(ab, welcome, welcomeLen);
             } else {
-                int color = editorSyntaxToColor(hl[j]);
-                if(color != current_color){
-                    current_color = color;
-                       char buf[16];
-                int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", color);
-                abAppend(ab, buf,clen);
-              
-                }
-                  abAppend(ab, &c[j], 1);
+                abAppend(ab, "~", 1);
             }
+        } else {
+            int len = E.row[filerow].rsize - E.coloff;
+            if (len < 0) len = 0;
+            // Adjust max width to account for the gutter
+            if (len > E.screenCols - gutter_len) len = E.screenCols - gutter_len;
+            
+            char *c = &E.row[filerow].render[E.coloff];
+            unsigned char *hl = &E.row[filerow].hl[E.coloff];
+            int current_color = -1;
+            
+            for (int j = 0; j < len; j++) {
+                if (iscntrl(c[j])) {
+                    char sym = (c[j] <= 26) ? '@' + c[j] : '?';
+                    abAppend(ab, "\x1b[7m", 4);
+                    abAppend(ab, &sym, 1);
+                    abAppend(ab, "\x1b[m", 3);
+                    if (current_color != -1) {
+                        char buf[16];
+                        int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", current_color);
+                        abAppend(ab, buf, clen);
+                    }
+                } else if (hl[j] == HL_NORMAL) {
+                    if (current_color != -1) {
+                        current_color = -1;
+                        abAppend(ab, "\x1b[39m", 5);
+                    }
+                    abAppend(ab, &c[j], 1);
+                } else {
+                    int color = editorSyntaxToColor(hl[j]);
+                    if (color != current_color) {
+                        current_color = color;
+                        char buf[16];
+                        int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", color);
+                        abAppend(ab, buf, clen);
+                    }
+                    abAppend(ab, &c[j], 1);
+                }
+            }
+            abAppend(ab, "\x1b[39m", 5);
         }
-        abAppend(ab, "\x1b[39m", 5);
-     }
 
-          abAppend(ab, "\x1b[K", 3);     
-          abAppend(ab,"\r\n", 2);
-
-        }
-    
+        abAppend(ab, "\x1b[K", 3);
+        abAppend(ab, "\r\n", 2);
+    }
 }
 
 void editorDrawStatusBar(struct abuf *ab){
@@ -1061,16 +1124,27 @@ void editorRefreshScreen(){
 
     struct abuf ab = ABUF_INIT;
 
-    abAppend(&ab, "\x1b[?25l", 6);
-    //abAppend(&ab,"\x1b[2J", 4);
+    abAppend(&ab, "\x1b[?25l", 6); // Note: Ensure this is lowercase 'l'
     abAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
     editorDrawStatusBar(&ab);
     editorDrawMessageBar(&ab);
 
+    // --- START NEW CODE: Cursor Offset ---
+    int gutter_len = 0;
+    if (E.numrows > 0) {
+        char buf[32];
+        gutter_len = snprintf(buf, sizeof(buf), "%d", E.numrows) + 1;
+    }
+
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.rx - E.coloff) + 1);
+    // Add gutter_len to the column position
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", 
+        (E.cy - E.rowoff) + 1, 
+        (E.rx - E.coloff) + 1 + gutter_len);
+    // --- END NEW CODE ---
+
     abAppend(&ab, buf, strlen(buf));
 
     abAppend(&ab, "\x1b[?25h", 6);

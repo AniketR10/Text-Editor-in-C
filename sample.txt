@@ -4,14 +4,14 @@ Mein janu naa ooohhh dilolll...tu sambhal jaa zaraaaaa....fir mohabbet krne lags
 Indented and my love i love you so much baby and all the good things paragraphs demonstrated in the US Constitution
 Ancient manuscripts also divided sentences into paragraphs with line breaks (newline) followed by an initial at the beginning of the next paragraph. An initial is an oversized capital letter, sometimes outdented beyond the margin of the text. This style can be seen, for example, in the original Old English manuscript of Beowulf. Outdenting is still used in English typography, though not commonly.[2] Modern English typography usually indicates a new paragraph by indenting the first line. This style can be seen in the (handwritten) United States Constitution from 1787. For additional ornamentation, a hedera leaf or other symbol can be added to the inter-paragraph white space, or put in the indentation space.
 
-A 3 4 5  second common modern English style is to use no indenting, but add vertical white space to create "block paragraphs." On a typewriter, a double carriage return produces a blank line for this purpose; professional typesetters (or word processing software) may put in an arbitrary vertical space by adjusting leading. This style is very common in electronic formats, such as on the World Wide Web and email. Wikipedia itself employs this format.
+A 3 4 5  second common modern English ss to use no indenting, but add vertical white space to create "block paragraphs." On a typewriter, a double carriage return produces a blank line for this purpose; professional typesetters (or word processing software) may put in an arbitrary vertical space by adjusting leading. This style is very common in electronic formats, such as on the World Wide Web and email. Wikipedia itself employs this format.
 
 Typographical considerations and all the other shenangians thank you is.
 Professionally printed material in English typically does not indent the first paragraph, but indents those that follow. For example, Robert Bringhurst states that we should "Set opening paragraphs flush left."[2] Bringhurst explains as follows:
 
 The function of a paragraph is to mark a pause, setting the paragraph apart from what precedes it. If a paragraph is preceded by a title or subhead, the indent is superfluous and can therefore be omitted.[2]
 
-The Elements of Typographic Style states that "at least one en [space]" should be used to indent paragraphs after the first,[2] noting that that is the "practical minimum".[3] An em space is the most commonly used paragraph indent.[3] Miles Tinker, in his book Legibility of Print, concluded that indenting the first line of paragraphs increases readability by 7%, on average.[4]
+The Elements of Typographic Style aniket tes that "at least one en [space]" should be used to indent paragraphs after the first,[2] noting that that is the "practical minimum".[3] An em space is the most commonly used paragraph indent.[3] Miles Tinker, in his book Legibility of Print, concluded that indenting the first line of paragraphs increases readability by 7%, on average.[4]
 
 When referencing a paragraph, typographic symbol U+00A7 § SECTION SIGN (&sect;) may be used: "See § Background".
 
