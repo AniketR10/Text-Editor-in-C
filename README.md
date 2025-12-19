@@ -41,5 +41,6 @@ You only need a C compiler (`gcc`) and `make`.
    make
 
 3. **Run:**
+   ```bash
     ./main [filename]
     
