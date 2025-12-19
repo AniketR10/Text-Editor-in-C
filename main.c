@@ -972,7 +972,6 @@ void editorProcessReadkey(){
     quit_times = KILO_QUIT_TIMES;
 }
 
-/* output */
 
 void editorScroll() {
     E.rx = 0;
@@ -980,27 +979,25 @@ void editorScroll() {
         E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
     }
 
-    // Vertical scrolling
     if (E.cy < E.rowoff) {
-        E.rowoff = E.cy;  // Scroll up
+        E.rowoff = E.cy; 
     }
     if (E.cy >= E.rowoff + E.screenRows) {
-        E.rowoff = E.cy - E.screenRows + 1;  // Scroll down
+        E.rowoff = E.cy - E.screenRows + 1; 
     }
 
-    // Horizontal scrolling
     if (E.rx < E.coloff) {
-        E.coloff = E.rx;  // Scroll left
+        E.coloff = E.rx;  
     }
     if (E.rx >= E.coloff + E.screenCols) {
-        E.coloff = E.rx - E.screenCols + 1;  // Scroll right
+        E.coloff = E.rx - E.screenCols + 1;  
     }
 }
 
 
 void editorDrawRows(struct abuf *ab) {
     int y;
-    // Calculate gutter width (e.g., "100 " needs 4 chars)
+    
     int gutter_len = 0;
     if (E.numrows > 0) {
         char buf[32];
@@ -1010,19 +1007,18 @@ void editorDrawRows(struct abuf *ab) {
     for (y = 0; y < E.screenRows; y++) {
         int filerow = y + E.rowoff;
         
-        // --- START NEW CODE: Draw Line Number ---
         if (filerow < E.numrows) {
             char num_buf[32];
-            // Format: "%4d " (Right aligned number with a space)
+            
             snprintf(num_buf, sizeof(num_buf), "\x1b[33m%*d \x1b[39m", gutter_len - 1, filerow + 1);
             abAppend(ab, num_buf, strlen(num_buf));
         } else if (E.numrows > 0) {
-            // Draw empty margin for lines beyond end of file
+           
             char blank_buf[32];
             snprintf(blank_buf, sizeof(blank_buf), "%*s", gutter_len, " ");
             abAppend(ab, blank_buf, strlen(blank_buf));
         }
-        // --- END NEW CODE ---
+        
 
         if (filerow >= E.numrows) {
             if (E.numrows == 0 && y == E.screenRows / 3) {
